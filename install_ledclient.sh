@@ -33,6 +33,7 @@ if ! command -v cmake &>/dev/null
 then
   echo -e "\e[31mnot found\e[0m"
   echo "Please install cmake"
+  exit 1
 else
   echo -e "\e[32mfound\e[0m"
 fi
