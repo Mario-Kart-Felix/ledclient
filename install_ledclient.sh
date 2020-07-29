@@ -63,7 +63,9 @@ echo "Building ledclient..."
 
 cd /tmp/ledclient-build/build
 
-cmake ..
+cmake .. || exit
+
+make || exit
 
 echo -e "\e[2mBuilding ledclient...\e[22;32mdone\e[0m"
 
