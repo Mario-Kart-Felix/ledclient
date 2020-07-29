@@ -1,0 +1,6 @@
+.idea/
+animatedledstrip/
+build/
+cmake-build-debug/
+nlohmann/
+safe-map/
