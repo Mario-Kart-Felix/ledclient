@@ -1,0 +1,24 @@
+---
+language: c++
+
+stages:
+  - name: deploy
+    if: tag IS present
+
+jobs:
+  include:
+    - stage: deploy
+      install: skip
+      script: skip
+      before_deploy:
+        - git clone https://github.com/AnimatedLEDStrip/animatedledstrip.github.io.git
+        - cd animatedledstrip.github.io
+        - cp ../install-ledclient.sh install/install-ledclient.sh
+        - git add install/install-ledclient.sh
+        - git commit --allow-empty -m "Update install-ledclient.sh"
+      deploy:
+        - provider: script
+          script:  git push -u https://maxnz:$GITHUB_TOKEN@github.com/AnimatedLEDStrip/animatedledstrip.github.io.git master
+          skip_cleanup: true
+          on:
+            tags: true
