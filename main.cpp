@@ -28,10 +28,35 @@
 #include <vector>
 #include <animatedledstrip/AnimationSender.hpp>
 
+using namespace std;
+
+struct Operation {
+    int opId;
+    string name;
+    string description;
+};
+
 #define OP_ANIMATIONS 0
-#define OP_RUNNING 1
-#define OP_START 2
-#define OP_END 3
+#define OP_END 1
+#define OP_HELP 2
+#define OP_INFO 3
+#define OP_RUNNING 4
+#define OP_START 5
+
+int selectedOp = -1;
+static struct Operation operations[6];
+
+typedef option getopt_option;
+
+struct Option {
+    int optId;
+    string identifier;
+    string description;
+
+    getopt_option get_getopt_option() const {
+        return getopt_option{identifier.c_str(), required_argument, nullptr, 0};
+    }
+};
 
 #define OPT_SERVER 0
 #define OPT_PORT 1
@@ -48,12 +73,9 @@
 #define OPT_SECTION 12
 #define OPT_SPACING 13
 
-using namespace std;
+#define NUM_OPTS 14
 
-int selectedOp = -1;
-static pair<string, int> operations[4];
-
-static struct option options[15];
+static struct Option options[NUM_OPTS];
 
 string format;
 
@@ -174,6 +196,24 @@ void printAnimationData(AnimationData anim) {
     cout << populateFormatString(replacements) << endl;
 }
 
+void printStripInfo(StripInfo info) {
+    vector<pair<string, string>> replacements = {
+            {"%numLEDs",           to_string(info.numLEDs)},
+            {"%n",                 to_string(info.numLEDs)},
+            {"%pin",               to_string(info.pin)},
+            {"%p",                 to_string(info.pin)},
+            {"%imageDebugging",    boolToString(info.imageDebugging)},
+            {"%i",                 boolToString(info.imageDebugging)},
+            {"%fileName",          info.fileName},
+            {"%f",                 info.fileName},
+            {"%rendersBeforeSave", to_string(info.rendersBeforeSave)},
+            {"%r",                 to_string(info.rendersBeforeSave)},
+            {"%threadCount",       to_string(info.threadCount)},
+            {"%t",                 to_string(info.threadCount)},
+    };
+
+    cout << populateFormatString(replacements) << endl;
+}
 
 ColorContainer handleColorInput(const char * b) {
     string buff;
@@ -208,12 +248,45 @@ void invalidFlag(int flag) {
     setOutputRed();
     cerr << "Flag ";
     setOutputDefault();
-    cerr << options[flag].name;
+    cerr << options[flag].identifier;
     setOutputRed();
     cerr << " not allowed for operation ";
     setOutputDefault();
-    cerr << operations[selectedOp].first << endl;
+    cerr << operations[selectedOp].name << endl;
     exit(EXIT_FAILURE);
+}
+
+void printHelp() {
+    cout << "ledclient - Communicate with an AnimatedLEDStrip server" << endl << endl
+         << "Usage: ledclient {animations|end|help|info|running|start}" << endl
+         << "                 {--server SERVER|-s SERVER} {--port PORT|-p PORT}" << endl
+         << "                 [--format FORMAT] [--animation ANIM] [--color COLORS]" << endl
+         << "                 [--center PIXEL] [--continuous BOOL] [--delay MSECS]" << endl
+         << "                 [--delayMod MULT] [--direction DIR] [--distance PIXELS]" << endl
+         << "                 [--id ID] [--section SECT] [--spacing PIXELS]" << endl << endl
+         << "Operations:" << endl;
+    for (const auto & op : operations) {
+        cout << "  " << op.name;
+        for (int s = op.name.length(); s <= 14; s++) cout << " ";
+        cout << op.description << endl;
+    }
+    cout << endl;
+    cout << "Options:" << endl;
+    for (const auto & opt : options) {
+        cout << "  --" << opt.identifier;
+        for (unsigned long s = opt.identifier.length() + 2; s <= 14; s++) cout << " ";
+        size_t found;
+        string description;
+        description.assign(opt.description);
+        while ((found = description.find('\n')) != string::npos) {
+            description.replace(found, 1, "\\n                  ");
+        }
+        while ((found = description.find("\\n")) != string::npos) {
+            description.replace(found, 2, "\n");
+        }
+        cout << description << endl;
+    }
+
 }
 
 
@@ -224,36 +297,56 @@ int main(int argc, char ** argv) {
         cerr << "Need to specify an operation";
         setOutputDefault();
         cerr << endl;
+        printHelp();
         exit(EXIT_FAILURE);
     }
 
-    operations[OP_ANIMATIONS] = {"animations", OP_ANIMATIONS};
-    operations[OP_RUNNING] = {"running", OP_RUNNING};
-    operations[OP_START] = {"start", OP_START};
-    operations[OP_END] = {"end", OP_END};
+    operations[OP_ANIMATIONS] = {OP_ANIMATIONS, "animations", "Print a list of animations supported by the server"};
+    operations[OP_END] = {OP_END, "end", "End a currently running animation"};
+    operations[OP_HELP] = {OP_HELP, "help", "Print this help message"};
+    operations[OP_INFO] = {OP_INFO, "info", "Get information about the strip"};
+    operations[OP_RUNNING] = {OP_RUNNING, "running", "Print a list of all running animations"};
+    operations[OP_START] = {OP_START, "start", "Start a new animation"};
 
-    options[OPT_SERVER] = {"server", required_argument, nullptr, 0};
-    options[OPT_PORT] = {"port", required_argument, nullptr, 0};
-    options[OPT_FORMAT] = {"format", required_argument, nullptr, 0};
-    options[OPT_ANIMATION] = {"animation", required_argument, nullptr, 0};
-    options[OPT_COLOR] = {"color", required_argument, nullptr, 0};
-    options[OPT_CENTER] = {"center", required_argument, nullptr, 0};
-    options[OPT_CONTINUOUS] = {"continuous", required_argument, nullptr, 0};
-    options[OPT_DELAY] = {"delay", required_argument, nullptr, 0};
-    options[OPT_DELAY_MOD] = {"delayMod", required_argument, nullptr, 0};
-    options[OPT_DIRECTION] = {"direction", required_argument, nullptr, 0};
-    options[OPT_DISTANCE] = {"distance", required_argument, nullptr, 0};
-    options[OPT_ID] = {"id", required_argument, nullptr, 0};
-    options[OPT_SECTION] = {"section", required_argument, nullptr, 0};
-    options[OPT_SPACING] = {"spacing", required_argument, nullptr, 0};
-    options[OPT_SERVER] = {"server", required_argument, nullptr, 0};
-    options[OPT_PORT] = {"port", required_argument, nullptr, 0};
-    options[14] = {nullptr, no_argument, nullptr, 0};
+    options[OPT_SERVER] = {OPT_SERVER, "server", "The IP to connect to"};
+    options[OPT_PORT] = {OPT_PORT, "port", "The port to connect to"};
+    options[OPT_FORMAT] = {OPT_FORMAT, "format", "How to format the output"};
+    options[OPT_ANIMATION] = {OPT_ANIMATION, "animation", "The animation to run"};
+    options[OPT_COLOR] = {OPT_COLOR, "color",
+                          "Add a new ColorContainer (COLORS is a comma-delimited list of\ncolors, with base "
+                          "specified if not decimal).\nCan be specified multiple times."};
+    options[OPT_CENTER] = {OPT_CENTER, "center",
+                           "The pixel at the center of an animation.\nDefaults to the center of the strip."};
+    options[OPT_CONTINUOUS] = {OPT_CONTINUOUS, "continuous",
+                               "If the animation will run endlessly until stopped"};
+    options[OPT_DELAY] = {OPT_DELAY, "delay", "Delay time (in milliseconds) used in the animation"};
+    options[OPT_DELAY_MOD] = {OPT_DELAY_MOD, "delayMod", "Multiplier for `delay`"};
+    options[OPT_DIRECTION] = {OPT_DIRECTION, "direction", "The direction the animation will run"};
+    options[OPT_DISTANCE] = {OPT_DISTANCE, "distance", "The distance an animation will travel from its center.\n"
+                                                       "Defaults to running until the ends of the strip."};
+    options[OPT_ID] = {OPT_ID, "id",
+                       "ID for the animation.\nUsed by server and clients to identify a specific animation"};
+    options[OPT_SECTION] = {OPT_SECTION, "section",
+                            "The id of the section of the strip that will be running the whole animation\n"
+                            "(not necessarily the section running this animation,\nsuch as if this is a subanimation).\n"
+                            "This is the section that ColorContainer blend preparation will be based upon.\n"
+                            "An empty string means the whole strip."};
+    options[OPT_SPACING] = {OPT_SPACING, "spacing", "Spacing used in the animation"};
 
     for (const auto & op : operations) {
-        if (strcmp(argv[1], op.first.c_str()) == 0) {
-            selectedOp = op.second;
-            break;
+        for (int c = op.name.length(); c > 0; c--) {
+            if (strcmp(argv[1], op.name.substr(0, c).c_str()) == 0) {
+                if (selectedOp == -1) selectedOp = op.opId;
+                else {
+                    setOutputRed();
+                    cerr << "Multiple operations match ";
+                    setOutputDefault();
+                    cerr << argv[1] << endl;
+                    printHelp();
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            }
         }
     }
 
@@ -262,7 +355,13 @@ int main(int argc, char ** argv) {
         cerr << "Invalid operation: ";
         setOutputDefault();
         cerr << argv[1] << endl;
+        printHelp();
         exit(EXIT_FAILURE);
+    }
+
+    if (selectedOp == OP_HELP) {
+        printHelp();
+        exit(EXIT_SUCCESS);
     }
 
     auto newAnim = new AnimationData();
@@ -270,7 +369,26 @@ int main(int argc, char ** argv) {
     auto newCC = ColorContainer();
     int optIndex = -1;
 
-    while (getopt_long(argc, argv, "", options, &optIndex) != -1) {
+    auto * opts = new getopt_option[NUM_OPTS + 1];
+    for (const auto & opt : options) {
+        opts[opt.optId] = opt.get_getopt_option();
+    }
+    opts[NUM_OPTS] = {nullptr, no_argument, nullptr, 0};
+
+    int shortOpt;
+
+    while ((shortOpt = getopt_long(argc, argv, "s:p:", opts, &optIndex)) != -1) {
+        switch (shortOpt) {
+            case 's':
+                optIndex = OPT_SERVER;
+                break;
+            case 'p':
+                optIndex = OPT_PORT;
+                break;
+            default:
+                break;
+        }
+
         switch (optIndex) {
             case OPT_SERVER:
                 if (optarg) serverIp = string(optarg);
@@ -282,6 +400,7 @@ int main(int argc, char ** argv) {
                 switch (selectedOp) {
                     case OP_ANIMATIONS:
                     case OP_RUNNING:
+                    case OP_INFO:
                         format = string(optarg);
                         break;
                     default:
@@ -347,6 +466,8 @@ int main(int argc, char ** argv) {
                 exit(EXIT_FAILURE);
         }
     }
+
+    delete[] opts;
 
     if (serverIp.empty()) {
         setOutputRed();
