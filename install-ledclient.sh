@@ -77,6 +77,18 @@ ln -f -s /usr/local/leds/ledclient /usr/bin/ledclient
 
 echo -e "\e[32mdone\e[0m"
 
+echo -n "Installing man page for ledclient..."
+
+mkdir -p /usr/local/man/man1
+
+cd /tmp/ledclient-build
+
+install -m 644 ledclient.1 /usr/local/man/man1/ledclient.1
+
+gzip /usr/local/man/man1/ledclient.1
+
+echo -e "\e[32mdone\e[0m"
+
 rm -rf /tmp/ledclient-build
 
 echo "AnimatedLEDStrip ledclient program installed successfully"

@@ -1,0 +1,353 @@
+.TH ledclient 1 "30 July 2020" "version 0.7"
+
+.Sh NAME
+ledclient - Communicate with an AnimatedLEDStrip server
+
+.SH SYNOPSIS
+.B ledclient help
+
+.B ledclient
+.RB { animations | info | running }
+.RB { "--server IP" | "-s IP" }
+.RB { "--port PORT" | "-p PORT" }
+.RB [ "--format FORMAT" ]
+
+.B ledclient end
+.RB { "--server IP" | "-s IP" }
+.RB { "--port PORT" | "-p PORT" }
+.RB { "--id ID" }
+
+.B ledclient start
+.RB { "--server IP" | "-s IP" }
+.RB { "--port PORT" | "-p PORT" }
+.RB [ "--animation ANIM_NAME" ]
+.RB [ --color
+.IR "COLORS " ...]
+.RB [ "--center PIXEL" ]
+.RB [ "--continuous"
+.IR CONTINUITY ]
+.RB [ "--delay TIME_MILLISECONDS" ]
+.RB [ "--delayMod MULTIPLIER" ]
+.RB [ "--direction
+.IR DIRECTION ]
+.RB [ "--distance PIXELS" ]
+.RB [ "--id ID" ]
+.RB [ "--section SECT" ]
+.RB [ "--spacing PIXELS" ]
+
+
+.I COLORS
+:= A comma-delimited string of color values
+(e.g. "255,65535" or "0xFF, 0xFFFF")
+
+.I CONTINUITY
+:=
+.RB { CONTINUOUS | TRUE | NONCONTINUOUS | FALSE | DEFAULT | NULL }
+
+.I DIRECTION
+:=
+.RB { FORWARD | BACKWARD }
+
+.SH DESCRIPTION
+Communicate with an AnimatedLEDStrip server.
+Connects to the specified server, performs the operation specified, then disconnects.
+
+.B ledclient animations
+prints a list of the animations the server supports.
+
+.B ledclient info
+prints information about the ledstrip and server.
+
+.B ledclient running
+prints information about currently running animations.
+
+.BR "ledclient animations" ", " "ledclient info" " and " "ledclient running"
+support modification of the output format with
+.BR "--format FORMAT" .
+See the
+.B FORMAT STRINGS
+section for more details.
+
+.B ledclient start
+will start a new animation.
+
+.B ledclient end
+will stop a currently running animation.
+
+.SH OPTION
+.TP
+.B --server, -s IP
+Set the IP to connect to.
+
+.TP
+.B --port, -p PORT
+Set the port to connect to.
+
+.TP
+.B --format FORMAT
+Set how to the format the output.
+
+.TP
+.B --animation ANIM_NAME
+Set the animation to run.
+
+.TP
+.BI "--color " COLORS
+Add a new ColorContainer.
+.I COLORS
+is a comma-delimited list of colors
+(e.g. "255,65535" or "0xFF, 0xFFFF").
+If the base is not decimal, specify it with a prefix.
+Can be specified multiple times.
+
+.TP
+.B --center PIXEL
+The pixel at the center of an animation.
+Defaults to the center of the strip.
+
+.TP
+.BI "--continuous " CONTINUITY
+If the animation will run endlessly until stopped.
+.I CONTINUITY
+is one of
+.BR CONTINUOUS ", " TRUE ", " NONCONTINUOUS ", " FALSE ", " DEFAULT ", or " NULL .
+.BR CONTINUOUS " or " TRUE
+means it will run continuously.
+.BR NONCONTINUOUS " or " FALSE
+means it will not run continuously.
+.BR DEFAULT " or " NULL
+means it will use the default repetitiveness of the animation.
+
+.TP
+.B --delay TIME_MILLISECONDS
+Delay time (in milliseconds) used in the animation.
+
+.TP
+.B --delayMod MULTIPLIER
+Multiplier for delay.
+
+.TP
+.BI "--direction " DIRECTION
+The direction the animation will appear to move.
+.I DIRECTION
+is one of
+.B FORWARD
+or
+.B BACKWARD
+
+.TP
+.B --distance PIXELS
+The distance an animation will travel from its center.
+Defaults to running until the ends of the strip.
+
+.TP
+.B --id ID
+ID for the animation.
+Used by server and clients to identify a specific animation.
+
+.TP
+.B --section SECTION
+The id of the section of the strip that will be running the whole animation
+(not necessarily the section running this animation, such as if this is a subanimation).
+This is the section that ColorContainer blend preparation will be based upon.
+An empty string means the whole strip.
+
+.TP
+.B --spacing PIXELS
+Spacing used in the animation.
+
+.SH FORMAT STRINGS
+The
+.BR animations ", " info ", and " running
+commands support customization of the output format.
+
+.SS ledclient animations
+
+.TP
+.BR %name ", " %n
+The name used to identify the animation.
+
+.TP
+.BR %abbr ", " %a
+The abbreviation that can be used to identify the animation.
+
+.TP
+.BR %description ", " %d
+A description of the animation.
+
+.TP
+.BR %signatureFile ", " %f
+The name of the file that holds the signature of an example run of the animation.
+
+.TP
+.BR %repetitive ", " %r ", " %R
+Can this animation be repeated
+(see
+.UR
+https://github.com/AnimatedLEDStrip/AnimatedLEDStrip/wiki/Repetitive-vs-NonRepetitive
+.US
+).
+.BR %repetitive " and " %r
+print the value as "true" or "false" while
+.B %R
+prints the value as "1" or "0".
+
+.TP
+.BR %minimumColors ", " %m
+The number of required colors for this animation. Any missing colors will be replaced with
+.B CCBlack
+(predefined ColorContainer containing the color 0x000000).
+
+.TP
+.BR %unlimitedColors ", " %u ", " %U
+Can this animation take an unlimited number of colors
+.BR %unlimitedColors " and " %u
+print the value as "true" or "false" while
+.B %U
+prints the value as "1" or "0".
+
+.TP
+.BR %center ", " %ce
+Does this animation use the
+.B center
+parameter. Printed as
+.B USED
+or
+.BR NOTUSED .
+
+.TP
+.BR %delay ", " %de
+Does this animation use the
+.B delay
+parameter. Printed as
+.B USED
+or
+.BR NOTUSED .
+
+.TP
+.BR %direction ", " %dr
+Does this animation use the
+.B direction
+parameter. Printed as
+.B USED
+or
+.BR NOTUSED .
+
+.TP
+.BR %distance ", " %ds
+Does this animation use the
+.B distance
+parameter. Printed as
+.B USED
+or
+.BR NOTUSED .
+
+.TP
+.BR %spacing ", " %sp
+Does this animation use the
+.B spacing
+parameter. Printed as
+.B USED
+or
+.BR NOTUSED .
+
+.TP
+.BR %delayDefault ", " %DE
+Default value for the
+.B delay
+parameter.
+
+.TP
+.BR %distanceDefault ", " %DS
+Default value for the
+.B distance
+parameter.
+
+.TP
+.BR %spacingDefault ", " %SP
+Default value for the
+.B spacing
+parameter.
+
+
+.SS ledclient info
+
+.TP
+.BR %numLEDs ", " %n
+Number of LEDs in the strip.
+
+.TP
+.BR %pin ", " %p
+Physical pin the strip is connected to.
+
+.TP
+.BR %imageDebugging ", " %i
+If image debugging is enabled.
+
+.TP
+.BR %fileName ", " %f
+File that image debugging output is written to.
+
+.TP
+.BR %rendersBeforeSave ", " %r
+Renders between image debugging writes.
+
+.TP
+.BR %threadCount ", " %t
+Number of threads used by animations.
+
+
+.SS ledclient running
+
+.TP
+.BR %animation ", " %a
+The name of the animation being run.
+
+.TP
+.BR %colors ", " %c
+The list of ColorContainers used by the animation.
+
+.TP
+.BR %center ", " %ce
+The pixel at the center of the animation.
+Defaults to the center of the strip.
+
+.TP
+.BR %continuous ", " %co
+If the animation will run endlessly until stopped.
+.B DEFAULT
+means it will use the default repetitiveness of the animation.
+
+.TP
+.BR %delay ", " %de
+Delay time (in milliseconds) used in the animation.
+
+.TP
+.BR %delayMod ", " %dm
+Multiplier for
+.BR delay .
+
+.TP
+.BR %direction ", " %dr
+The direction the animation appears to move.
+
+.TP
+.BR %distance ", " %ds
+The distance an animation will travel from its center.
+Defaults to the length of the strip, meaning it will run until the ends of the strip.
+
+.TP
+.BR %id ", " %i
+ID for the animation.
+Used by server and clients to identify a specific animation.
+
+.TP
+.BR %section ", " %se
+The id of the section of the strip that will be running the whole animation
+(not necessarily the section running this animation, such as if this is a subanimation).
+This is the section that ColorContainer blend preparation will be based upon.
+An empty string means the whole strip.
+
+.TP
+.BR %spacing ", " %sp
+Spacing used in the animation.

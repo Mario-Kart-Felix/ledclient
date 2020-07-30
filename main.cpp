@@ -51,7 +51,6 @@ typedef option getopt_option;
 struct Option {
     int optId;
     string identifier;
-    string description;
 
     getopt_option get_getopt_option() const {
         return getopt_option{identifier.c_str(), required_argument, nullptr, 0};
@@ -215,6 +214,26 @@ void printStripInfo(StripInfo info) {
     cout << populateFormatString(replacements) << endl;
 }
 
+void setOutputRed() {
+    cerr << "\033[31m";
+}
+
+void setOutputDefault() {
+    cerr << "\33[0m";
+}
+
+void invalidFlag(int flag) {
+    setOutputRed();
+    cerr << "Flag ";
+    setOutputDefault();
+    cerr << options[flag].identifier;
+    setOutputRed();
+    cerr << " not allowed for operation ";
+    setOutputDefault();
+    cerr << operations[selectedOp].name << endl;
+    exit(EXIT_FAILURE);
+}
+
 ColorContainer handleColorInput(const char * b) {
     string buff;
     buff.assign(b);
@@ -236,57 +255,109 @@ ColorContainer handleColorInput(const char * b) {
     return cc;
 }
 
-void setOutputRed() {
-    cerr << "\033[31m";
+Continuous handleContinuousInput(const char * b) {
+    string buff;
+    buff.assign(b);
+
+    vector<pair<string, Continuous>> possibleArgs = {
+            {"CONTINUOUS",    CONTINUOUS},
+            {"TRUE",          CONTINUOUS},
+            {"NONCONTINUOUS", NONCONTINUOUS},
+            {"FALSE",         NONCONTINUOUS},
+            {"DEFAULT",       DEFAULT},
+            {"NULL",          DEFAULT},
+    };
+
+    // Change to uppercase
+    for (char & c : buff) if (c >= 'a' && c <= 'z') c -= 32;
+
+    vector<pair<string, Continuous>> matchingArgs;
+
+    for (const auto & arg : possibleArgs) {
+        for (int c = arg.first.length(); c > 0; c--) {
+            if (strcmp(buff.c_str(), arg.first.substr(0, c).c_str()) == 0) {
+                matchingArgs.push_back(arg);
+                break;
+            }
+        }
+    }
+
+    if (matchingArgs.empty()) {
+        setOutputRed();
+        cerr << "Value ";
+        setOutputDefault();
+        cerr << b;
+        setOutputRed();
+        cerr << " does not match any of the following: ";
+        setOutputDefault();
+        for (const auto & arg : possibleArgs) cerr << arg.first << " ";
+        cerr << endl;
+        exit(EXIT_FAILURE);
+    } else if (matchingArgs.size() > 1) {
+        setOutputRed();
+        cerr << "Value ";
+        setOutputDefault();
+        cerr << b;
+        setOutputRed();
+        cerr << " matches multiple values: ";
+        setOutputDefault();
+        for (const auto & arg : matchingArgs) cerr << arg.first << " ";
+        cerr << endl;
+        exit(EXIT_FAILURE);
+    } else return matchingArgs[0].second;
 }
 
-void setOutputDefault() {
-    cerr << "\33[0m";
-}
+Direction handleDirectionInput(const char * b) {
+    string buff;
+    buff.assign(b);
 
-void invalidFlag(int flag) {
-    setOutputRed();
-    cerr << "Flag ";
-    setOutputDefault();
-    cerr << options[flag].identifier;
-    setOutputRed();
-    cerr << " not allowed for operation ";
-    setOutputDefault();
-    cerr << operations[selectedOp].name << endl;
-    exit(EXIT_FAILURE);
+    vector<pair<string, Direction>> possibleArgs = {
+            {"FORWARD",  FORWARD},
+            {"BACKWARD", BACKWARD},
+    };
+
+    // Change to uppercase
+    for (char & c : buff) if (c >= 'a' && c <= 'z') c -= 32;
+
+    vector<pair<string, Direction>> matchingArgs;
+
+    for (const auto & arg : possibleArgs) {
+        for (int c = arg.first.length(); c > 0; c--) {
+            if (strcmp(buff.c_str(), arg.first.substr(0, c).c_str()) == 0) {
+                matchingArgs.push_back(arg);
+                break;
+            }
+        }
+    }
+
+    if (matchingArgs.empty()) {
+        setOutputRed();
+        cerr << "Value ";
+        setOutputDefault();
+        cerr << b;
+        setOutputRed();
+        cerr << " does not match any of the following: ";
+        setOutputDefault();
+        for (const auto & arg : possibleArgs) cerr << arg.first << " ";
+        cerr << endl;
+        exit(EXIT_FAILURE);
+    } else if (matchingArgs.size() > 1) {
+        setOutputRed();
+        cerr << "Value ";
+        setOutputDefault();
+        cerr << b;
+        setOutputRed();
+        cerr << " matches multiple values: ";
+        setOutputDefault();
+        for (const auto & arg : matchingArgs) cerr << arg.first << " ";
+        cerr << endl;
+        exit(EXIT_FAILURE);
+    } else return matchingArgs[0].second;
 }
 
 void printHelp() {
-    cout << "ledclient - Communicate with an AnimatedLEDStrip server" << endl << endl
-         << "Usage: ledclient {animations|end|help|info|running|start}" << endl
-         << "                 {--server SERVER|-s SERVER} {--port PORT|-p PORT}" << endl
-         << "                 [--format FORMAT] [--animation ANIM] [--color COLORS]" << endl
-         << "                 [--center PIXEL] [--continuous BOOL] [--delay MSECS]" << endl
-         << "                 [--delayMod MULT] [--direction DIR] [--distance PIXELS]" << endl
-         << "                 [--id ID] [--section SECT] [--spacing PIXELS]" << endl << endl
-         << "Operations:" << endl;
-    for (const auto & op : operations) {
-        cout << "  " << op.name;
-        for (int s = op.name.length(); s <= 14; s++) cout << " ";
-        cout << op.description << endl;
-    }
-    cout << endl;
-    cout << "Options:" << endl;
-    for (const auto & opt : options) {
-        cout << "  --" << opt.identifier;
-        for (unsigned long s = opt.identifier.length() + 2; s <= 14; s++) cout << " ";
-        size_t found;
-        string description;
-        description.assign(opt.description);
-        while ((found = description.find('\n')) != string::npos) {
-            description.replace(found, 1, "\\n                  ");
-        }
-        while ((found = description.find("\\n")) != string::npos) {
-            description.replace(found, 2, "\n");
-        }
-        cout << description << endl;
-    }
-
+    cout << "ledclient - Communicate with an AnimatedLEDStrip server" << endl;
+    cout << "View the man page with 'man ledclient' for detailed help" << endl;
 }
 
 
@@ -297,41 +368,30 @@ int main(int argc, char ** argv) {
         cerr << "Need to specify an operation";
         setOutputDefault();
         cerr << endl;
-        printHelp();
         exit(EXIT_FAILURE);
     }
 
-    operations[OP_ANIMATIONS] = {OP_ANIMATIONS, "animations", "Print a list of animations supported by the server"};
-    operations[OP_END] = {OP_END, "end", "End a currently running animation"};
-    operations[OP_HELP] = {OP_HELP, "help", "Print this help message"};
-    operations[OP_INFO] = {OP_INFO, "info", "Get information about the strip"};
-    operations[OP_RUNNING] = {OP_RUNNING, "running", "Print a list of all running animations"};
-    operations[OP_START] = {OP_START, "start", "Start a new animation"};
+    operations[OP_ANIMATIONS] = {OP_ANIMATIONS, "animations"};
+    operations[OP_END] = {OP_END, "end"};
+    operations[OP_HELP] = {OP_HELP, "help"};
+    operations[OP_INFO] = {OP_INFO, "info"};
+    operations[OP_RUNNING] = {OP_RUNNING, "running"};
+    operations[OP_START] = {OP_START, "start"};
 
-    options[OPT_SERVER] = {OPT_SERVER, "server", "The IP to connect to"};
-    options[OPT_PORT] = {OPT_PORT, "port", "The port to connect to"};
-    options[OPT_FORMAT] = {OPT_FORMAT, "format", "How to format the output"};
-    options[OPT_ANIMATION] = {OPT_ANIMATION, "animation", "The animation to run"};
-    options[OPT_COLOR] = {OPT_COLOR, "color",
-                          "Add a new ColorContainer (COLORS is a comma-delimited list of\ncolors, with base "
-                          "specified if not decimal).\nCan be specified multiple times."};
-    options[OPT_CENTER] = {OPT_CENTER, "center",
-                           "The pixel at the center of an animation.\nDefaults to the center of the strip."};
-    options[OPT_CONTINUOUS] = {OPT_CONTINUOUS, "continuous",
-                               "If the animation will run endlessly until stopped"};
-    options[OPT_DELAY] = {OPT_DELAY, "delay", "Delay time (in milliseconds) used in the animation"};
-    options[OPT_DELAY_MOD] = {OPT_DELAY_MOD, "delayMod", "Multiplier for `delay`"};
-    options[OPT_DIRECTION] = {OPT_DIRECTION, "direction", "The direction the animation will run"};
-    options[OPT_DISTANCE] = {OPT_DISTANCE, "distance", "The distance an animation will travel from its center.\n"
-                                                       "Defaults to running until the ends of the strip."};
-    options[OPT_ID] = {OPT_ID, "id",
-                       "ID for the animation.\nUsed by server and clients to identify a specific animation"};
-    options[OPT_SECTION] = {OPT_SECTION, "section",
-                            "The id of the section of the strip that will be running the whole animation\n"
-                            "(not necessarily the section running this animation,\nsuch as if this is a subanimation).\n"
-                            "This is the section that ColorContainer blend preparation will be based upon.\n"
-                            "An empty string means the whole strip."};
-    options[OPT_SPACING] = {OPT_SPACING, "spacing", "Spacing used in the animation"};
+    options[OPT_SERVER] = {OPT_SERVER, "server"};
+    options[OPT_PORT] = {OPT_PORT, "port"};
+    options[OPT_FORMAT] = {OPT_FORMAT, "format"};
+    options[OPT_ANIMATION] = {OPT_ANIMATION, "animation"};
+    options[OPT_COLOR] = {OPT_COLOR, "color"};
+    options[OPT_CENTER] = {OPT_CENTER, "center"};
+    options[OPT_CONTINUOUS] = {OPT_CONTINUOUS, "continuous"};
+    options[OPT_DELAY] = {OPT_DELAY, "delay"};
+    options[OPT_DELAY_MOD] = {OPT_DELAY_MOD, "delayMod"};
+    options[OPT_DIRECTION] = {OPT_DIRECTION, "direction"};
+    options[OPT_DISTANCE] = {OPT_DISTANCE, "distance"};
+    options[OPT_ID] = {OPT_ID, "id"};
+    options[OPT_SECTION] = {OPT_SECTION, "section"};
+    options[OPT_SPACING] = {OPT_SPACING, "spacing"};
 
     for (const auto & op : operations) {
         for (int c = op.name.length(); c > 0; c--) {
@@ -342,7 +402,6 @@ int main(int argc, char ** argv) {
                     cerr << "Multiple operations match ";
                     setOutputDefault();
                     cerr << argv[1] << endl;
-                    printHelp();
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -355,7 +414,6 @@ int main(int argc, char ** argv) {
         cerr << "Invalid operation: ";
         setOutputDefault();
         cerr << argv[1] << endl;
-        printHelp();
         exit(EXIT_FAILURE);
     }
 
@@ -423,7 +481,9 @@ int main(int argc, char ** argv) {
                 else newAnim->setCenter((int) strtol(optarg, nullptr, 0));
                 break;
             case OPT_CONTINUOUS:
-                break;  // TODO
+                if (selectedOp != OP_START) invalidFlag(OPT_DIRECTION);
+                else newAnim->setContinuous(handleContinuousInput(optarg));
+                break;
             case OPT_DELAY:
                 if (selectedOp != OP_START) invalidFlag(OPT_DELAY);
                 else newAnim->setDelay(strtol(optarg, nullptr, 0));
@@ -433,7 +493,9 @@ int main(int argc, char ** argv) {
                 else newAnim->setDelayMod(strtod(optarg, nullptr));
                 break;
             case OPT_DIRECTION:
-                break;  // TODO
+                if (selectedOp != OP_START) invalidFlag(OPT_DIRECTION);
+                else newAnim->setDirection(handleDirectionInput(optarg));
+                break;
             case OPT_DISTANCE:
                 if (selectedOp != OP_START) invalidFlag(OPT_DISTANCE);
                 else newAnim->setDistance((int) strtol(optarg, nullptr, 0));
@@ -466,8 +528,6 @@ int main(int argc, char ** argv) {
                 exit(EXIT_FAILURE);
         }
     }
-
-    delete[] opts;
 
     if (serverIp.empty()) {
         setOutputRed();
@@ -522,6 +582,7 @@ int main(int argc, char ** argv) {
 
     sender->end();
 
+    delete[] opts;
     delete newAnim;
     delete newEnd;
     delete sender;

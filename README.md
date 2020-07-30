@@ -16,3 +16,4 @@ This will install the program, which can be run with `ledclient`.
 
 ## Usage
 
+View the man page with `man ledclient` after you install.
