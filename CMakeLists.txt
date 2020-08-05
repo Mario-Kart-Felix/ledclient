@@ -35,6 +35,7 @@ file(DOWNLOAD https://github.com/animatedledstrip/client-cpp/raw/master/src/Anim
 file(DOWNLOAD https://github.com/animatedledstrip/client-cpp/raw/master/src/AnimationSender.hpp ${ALS_SRC_DIR}/AnimationSender.hpp)
 file(DOWNLOAD https://github.com/animatedledstrip/client-cpp/raw/master/src/ColorContainer.hpp ${ALS_SRC_DIR}/ColorContainer.hpp)
 file(DOWNLOAD https://github.com/animatedledstrip/client-cpp/raw/master/src/EndAnimation.hpp ${ALS_SRC_DIR}/EndAnimation.hpp)
+file(DOWNLOAD https://github.com/animatedledstrip/client-cpp/raw/master/src/Section.hpp ${ALS_SRC_DIR}/Section.hpp)
 file(DOWNLOAD https://github.com/animatedledstrip/client-cpp/raw/master/src/StripInfo.hpp ${ALS_SRC_DIR}/StripInfo.hpp)
 
 set(JSON_VERSION v3.7.3)
